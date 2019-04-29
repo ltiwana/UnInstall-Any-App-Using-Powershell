@@ -1,5 +1,4 @@
-﻿Get-ADComputer -Filter "name -eq 'c-jutlandhub9'"
-
+﻿
 Function Uninstall-AnyApp {
     
     [CmdletBinding()] 
@@ -31,9 +30,9 @@ Function Uninstall-AnyApp {
         if ($Quiet) {
     
             Write-Verbose "Quiet Uninstall string: $UninstallString"
-            Write-Verbose "Running quiet uninstall command: $("& `""$UninstallString"`" | out-host")"
+            Write-Verbose "Running quiet uninstall command: $("& $UninstallString | out-host")"
             #Start-Process -FilePath $UninstallString -Wait
-            Invoke-Expression ("& `"" + $UninstallString + "`" | out-host")
+            Invoke-Expression ("& $UninstallString | out-host")
             Write-Verbose "Adding 30 seconds delay"
             sleep 30
     
@@ -46,10 +45,10 @@ Function Uninstall-AnyApp {
             if (!$SilentSwitch) {
                     Write-Warning "Unable to find the quiet uninstall string. Unintall may require user interaction"
                     Write-Warning "Try using the silent switch"
-                    Write-Warning "Example: Uninstall-AnyApp -AppName `"$Script:AppName`" -SilentSwitch `"/silent`""
+                    Write-Warning ("Example: Uninstall-AnyApp -AppName `"" + $Script:AppName + "`" -SilentSwitch `"/silent`"")
                     #Start-Process -FilePath $UninstallString -Wait
-                    Write-Verbose "Trying to Executing following command $("& $UninstallString | out-host")"
-                    Invoke-Expression ("& " + $UninstallString + " | out-host")
+                    Write-Verbose "Trying to Executing following command: $("& $UninstallString | out-host")"
+                    Invoke-Expression ("&  $UninstallString | out-host")
                     if (!$?) {
                         Write-Warning "$AppName uninstall has failed."
                         Write-Warning "Exit code: $LASTEXITCODE"
@@ -59,8 +58,8 @@ Function Uninstall-AnyApp {
 
             else {
                 Write-Verbose "Silent switch was provided manually"
-                Write-Verbose "Trying to Executing following command $("& $UninstallString $SilentSwitch | out-host")"
-                Start-Process -FilePath $UninstallString -ArgumentList $SilentSwitch -Wait -PassThru -NoNewWindow
+                Write-Verbose "Trying to Executing following command: $("Start-Process -FilePath $UninstallString -ArgumentList $SilentSwitch -Wait -PassThru -NoNewWindow | Out-Host")"
+                Start-Process -FilePath $UninstallString -ArgumentList $SilentSwitch -Wait -PassThru -NoNewWindow | Out-Host
                 if (!$?) {
                     Write-Warning "$AppName uninstall has failed."
                     Write-Warning "Exit code: $LASTEXITCODE"
