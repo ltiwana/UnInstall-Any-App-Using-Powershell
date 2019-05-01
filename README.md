@@ -1,1 +1,1 @@
-# I will post the instructions soon.
+# Instructions are coming soon.
