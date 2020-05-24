@@ -15,7 +15,8 @@ Function Uninstall-AnyApp {
     if (!(Test-Path $LogLocation)) {mkdir $LogLocation -Verbose}
 
     Write-Verbose "Starting log"
-    Start-Transcript -Path "$LogLocation\Uninstall-AnyApp_PSLogs$(Get-Date -Format "_yyyy-MM-dd_hh.mm").log" -Verbose
+
+    Start-Transcript -Path "$LogLocation\Uninstall-AnyApp_$($AppName -replace " ","-")`_PSLogs$(Get-Date -Format "_yyyy-MM-dd_hh.mm").log" -Verbose
     
     Write-Verbose "Script start time: $(get-date)"
 
@@ -33,8 +34,8 @@ Function Uninstall-AnyApp {
             Write-Verbose "Running quiet uninstall command: $("& $UninstallString | out-host")"
             #Start-Process -FilePath $UninstallString -Wait
             Invoke-Expression ("& $UninstallString | out-host")
-            Write-Verbose "Adding 30 seconds delay"
-            sleep 30
+            #Write-Verbose "Adding 30 seconds delay"
+            #sleep 30
     
         }
 
@@ -68,8 +69,8 @@ Function Uninstall-AnyApp {
             }
             
 
-            Write-Verbose "Adding 30 seconds delay"
-            sleep 30
+            #Write-Verbose "Adding 30 seconds delay"
+            #sleep 30
     
         }
 
@@ -108,6 +109,7 @@ Function Uninstall-AnyApp {
             Write-Warning "More than one Apps were found in WMI objects. Please try more specific app name."
             Write-Verbose "Current defined App name: $AppName"
             Write-Verbose "List of apps found: $($FoundApps |fl -Verbose |Out-String)"
+            Return $FoundApps
         }
 
         else {
@@ -131,8 +133,8 @@ Function Uninstall-AnyApp {
 
                 }
 
-                Write-Verbose "Adding 30 seconds delay"
-                sleep 30
+                #Write-Verbose "Adding 30 seconds delay"
+                #sleep 30
             }
 
         }
@@ -143,45 +145,82 @@ Function Uninstall-AnyApp {
         Write-Warning "$AppName is not found in WMI objects"
 
         Write-Verbose "Trying to detect $AppName in 64-bit registry"
-        $QuietUninstallString64 = (Get-ItemProperty "HKLM:\Software\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall\*$AppName*\" -ErrorAction SilentlyContinue   | select QuietUninstallString).QuietUninstallString 
-        if ($QuietUninstallString64 -eq $Null -or !$QuietUninstallString64) { $QuietUninstallString64 = (Get-ItemProperty "HKLM:\Software\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall\*" -Name DisplayName, QuietUninstallString -ErrorAction SilentlyContinue | ?{$_.DisplayName -like "*$AppName*"} | select QuietUninstallString).QuietUninstallString}
+        $AppName64RegQU = Get-ItemProperty "HKLM:\Software\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall\*$AppName*\" -ErrorAction SilentlyContinue 
+        $QuietUninstallString64 = $AppName64RegQU.QuietUninstallString 
+        if ($QuietUninstallString64 -eq $Null -or !$QuietUninstallString64) { 
+            $AppName64RegQU = Get-ItemProperty "HKLM:\Software\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | ?{$_.DisplayName -like "*$AppName*"}
+            $QuietUninstallString64 = $AppName64RegQU.QuietUninstallString
+        }
 
-        $UninstallString64 = (Get-ItemProperty "HKLM:\Software\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall\*$AppName*\" -ErrorAction SilentlyContinue   | select UninstallString).UninstallString
-        if ($UninstallString64 -eq $Null -or !$UninstallString64) { $UninstallString64 = (Get-ItemProperty "HKLM:\Software\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall\*" -Name DisplayName, UninstallString -ErrorAction SilentlyContinue | ?{$_.DisplayName -like "*$AppName*"} | select UninstallString).UninstallString}
+        $AppName64RegU = Get-ItemProperty "HKLM:\Software\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall\*$AppName*\" -ErrorAction SilentlyContinue
+        $UninstallString64 = $AppName64RegU.UninstallString
+        if ($UninstallString64 -eq $Null -or !$UninstallString64) { 
+            $AppName64RegU = Get-ItemProperty "HKLM:\Software\wow6432node\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | ?{$_.DisplayName -like "*$AppName*"} 
+            $UninstallString64 = $AppName64RegU.UninstallString
+        }
 
         Write-Verbose "Trying to detect $AppName in 32-bit registry"
-        $QuietUninstallString32 = (Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*$AppName*\" -ErrorAction SilentlyContinue   | select QuietUninstallString).QuietUninstallString
-        if ($QuietUninstallString32 -eq $Null -or !$QuietUninstallString32) { $QuietUninstallString32 = (Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" -Name DisplayName, QuietUninstallString -ErrorAction SilentlyContinue | ?{$_.DisplayName -like "*$AppName*"} | select QuietUninstallString).QuietUninstallString}
+        $AppName32RegQU = Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*$AppName*\" -ErrorAction SilentlyContinue  
+        $QuietUninstallString32 = $AppName32RegQU.QuietUninstallString
+        if ($QuietUninstallString32 -eq $Null -or !$QuietUninstallString32) { 
+            $AppName32RegQU = Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | ?{$_.DisplayName -like "*$AppName*"} 
+            $QuietUninstallString32 = $AppName32RegQU.QuietUninstallString
+        }
 
-        $UninstallString32 = (Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*$AppName*\" -ErrorAction SilentlyContinue   | select uninstallstring).UninstallString
-        if ($UninstallString32 -eq $Null -or !$UninstallString32) { $UninstallString32 = (Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" -Name DisplayName, uninstallstring -ErrorAction SilentlyContinue | ?{$_.DisplayName -like "*$AppName*"} | select uninstallstring).uninstallstring}
+        $AppName32RegU = Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*$AppName*\" -ErrorAction SilentlyContinue
+        $UninstallString32 = $AppName32RegU.UninstallString
+        if ($UninstallString32 -eq $Null -or !$UninstallString32) { 
+            $AppName32RegU = Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*"  -ErrorAction SilentlyContinue | ?{$_.DisplayName -like "*$AppName*"} 
+            $UninstallString32 = $AppName32RegU.uninstallstring
+        }
 
         
         if ($QuietUninstallString64 -and $QuietUninstallString64.count -lt "2") {
             Write-Verbose "A 64 bit quiet uninstall string was found"
+            $AppName64RegQU
             $QuietUninstallString64 = Clean-UninstallString $QuietUninstallString64
-           
             Run-Uninstall -UninstallString $QuietUninstallString64 -Quiet
+
         }
         elseif ($QuietUninstallString32 -and $QuietUninstallString32.count -lt "2") {
             Write-Verbose "A 32 bit quiet uninstall string was found"
+            $AppName32RegQU
             $QuietUninstallString32 = Clean-UninstallString $QuietUninstallString32
             Run-Uninstall -UninstallString $QuietUninstallString32 -Quiet
         }
         elseif ($UninstallString64 -and $UninstallString64.count -lt "2") {
             Write-Warning "A 64 bit uninstall string was found."
+            $AppName64RegU
             $UninstallString64 = Clean-UninstallString $UninstallString64
             Run-Uninstall -UninstallString $UninstallString64 -SilentSwitch $SilentSwitch
         }
         elseif ($UninstallString32 -and $UninstallString32.count -lt "2") {
             Write-Warning "A 32 bit uninstall string was found."
+            $AppName32RegU
             $UninstallString32 = Clean-UninstallString $UninstallString32
             Run-Uninstall -UninstallString $UninstallString32 -SilentSwitch $SilentSwitch
         }
         Else {
-            if ($QuietUninstallString64.count -gt "1" -or $QuietUninstallString32.count -gt "1" -or $UninstallString64.count -gt "1" -or $UninstallString32.count -gt "1") {
+
+            if ($QuietUninstallString64.count -gt "1") {
                 Write-Warning "More than one Apps were found in registry key. Please try more specific app name."
                 Write-Verbose "Current defined App name: $AppName"
+                return $AppName64RegQU
+            } 
+            elseif ($QuietUninstallString32.count -gt "1") {
+                Write-Warning "More than one Apps were found in registry key. Please try more specific app name."
+                Write-Verbose "Current defined App name: $AppName"
+                return $AppName64RegU
+            }
+            elseif ($UninstallString64.count -gt "1") {
+                Write-Warning "More than one Apps were found in registry key. Please try more specific app name."
+                Write-Verbose "Current defined App name: $AppName"
+                return $AppName32RegQU
+            }
+            elseif ($UninstallString32.count -gt "1") {
+                Write-Warning "More than one Apps were found in registry key. Please try more specific app name."
+                Write-Verbose "Current defined App name: $AppName"
+                return $AppName32RegU
                 
             }
             else {
