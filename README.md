@@ -1,7 +1,10 @@
 # Uninstall Almost Any App Using This PowerShell Module.
 
+### Uninstalling Putty
 ![alt text](/Screenshots/2.gif)
 </br>
+</br>
+### Uninstalling Firefox
 ![alt text](/Screenshots/1.gif)
 </br>
 
